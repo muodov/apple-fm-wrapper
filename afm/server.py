@@ -1,10 +1,13 @@
 import json
+import sys
 import time
 import uuid
 
 from aiohttp import web
 
 import apple_fm_sdk as fm
+
+_request_count = 0
 
 
 def _normalize_schema(obj):
@@ -23,7 +26,16 @@ def _normalize_schema(obj):
     return obj
 
 
+def _log(msg):
+    print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
 async def handle_chat_completions(request):
+    global _request_count
+    _request_count += 1
+    req_id = _request_count
+    t0 = time.monotonic()
+
     body = await request.json()
 
     messages = body.get("messages", [])
@@ -59,6 +71,12 @@ async def handle_chat_completions(request):
             if "title" not in json_schema:
                 json_schema["title"] = schema_wrapper.get("name", "Response")
 
+    schema_name = None
+    if response_format and response_format.get("type") == "json_schema":
+        schema_name = response_format.get("json_schema", {}).get("name")
+    prompt_preview = user_prompt[:80].replace('\n', ' ')
+    _log(f"#{req_id} prompt={len(user_prompt)} chars schema={schema_name} \"{prompt_preview}...\"")
+
     try:
         if json_schema:
             result = await session.respond(user_prompt, json_schema=json_schema, options=options)
@@ -66,10 +84,16 @@ async def handle_chat_completions(request):
         else:
             content = await session.respond(user_prompt, options=options)
     except fm.FoundationModelsError as e:
+        elapsed = time.monotonic() - t0
+        _log(f"#{req_id} ERROR {elapsed:.1f}s {e}")
         return web.json_response(
             {"error": {"message": str(e), "type": "server_error"}},
             status=500,
         )
+
+    elapsed = time.monotonic() - t0
+    content_preview = content[:100].replace('\n', ' ')
+    _log(f"#{req_id} OK {elapsed:.1f}s \"{content_preview}\"")
 
     return web.json_response({
         "id": f"afm-{uuid.uuid4().hex[:24]}",
