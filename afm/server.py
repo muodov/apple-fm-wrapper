@@ -71,11 +71,10 @@ async def handle_chat_completions(request):
             if "title" not in json_schema:
                 json_schema["title"] = schema_wrapper.get("name", "Response")
 
-    schema_name = None
-    if response_format and response_format.get("type") == "json_schema":
-        schema_name = response_format.get("json_schema", {}).get("name")
+    schema_name = json_schema.get("title") if json_schema else None
+    sys_preview = (system_prompt or '(none)')[:60].replace('\n', ' ')
     prompt_preview = user_prompt[:80].replace('\n', ' ')
-    _log(f"#{req_id} prompt={len(user_prompt)} chars schema={schema_name} \"{prompt_preview}...\"")
+    _log(f"#{req_id} system=\"{sys_preview}...\" prompt={len(user_prompt)} chars schema={schema_name} temp={temperature} \"{prompt_preview}...\"")
 
     try:
         if json_schema:
