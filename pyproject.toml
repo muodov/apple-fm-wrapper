@@ -9,6 +9,7 @@ description = "Thin CLI wrapper around apple-fm-sdk for interactive testing"
 requires-python = ">=3.10"
 dependencies = [
     "apple-fm-sdk",
+    "aiohttp",
 ]
 
 [project.scripts]
