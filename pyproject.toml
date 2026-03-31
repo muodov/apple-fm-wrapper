@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apple-fm-wrapper"
+version = "0.1.0"
+description = "Thin CLI wrapper around apple-fm-sdk for interactive testing"
+requires-python = ">=3.10"
+dependencies = [
+    "apple-fm-sdk",
+]
+
+[project.scripts]
+afm = "afm.cli:main"
